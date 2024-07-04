@@ -9,7 +9,7 @@ from perturb_helper_funcs import *
 
 
 def generate_vname(ensemble_number):
-    base_path = "/home/fernand/JURECA/CLM5_DATA/inputdata/lnd/clm2/paramdata/test_trial_22/max/SE-Svb"
+    base_path = "/home/fernand/JURECA/CLM5_DATA/inputdata/lnd/clm2/paramdata/ensemble/trial_22/SE-Svb"
     filename = f"clm5_params.c171117.nc_{str(ensemble_number + 1).zfill(5)}.nc"
     return os.path.join(base_path, filename)
 
@@ -20,9 +20,10 @@ def load_parameter_values(ensemble_number, parameter_name):
     return parameter_values.flatten()
 
 def perturb_vegetation_parameters(iensemble, parameter_ranges):
-    vorig = "/home/fernand/JURECA/CLM5_DATA/inputdata/lnd/clm2/paramdata/test_trial_22/max/SE-Svb/clm5_params.c171117.nc"
+    vorig = "/home/fernand/JURECA/CLM5_DATA/inputdata/lnd/clm2/paramdata/ensemble/trial_22/SE-Svb/clm5_params.c171117.nc"
     vname = generate_vname(iensemble)
 
+    
     with nc.Dataset(vorig) as src, nc.Dataset(vname, "w") as dst:
         # Copy attributes
         copy_attr_dim(src, dst)
@@ -59,7 +60,8 @@ def perturb_vegetation_parameters(iensemble, parameter_ranges):
 
 
 def main():
-    num_ensemble = 50
+    num_ensemble = 150
+    random_seed = 54321
 
     # Define the parameters and their perturbation ranges
     parameter_ranges = {
@@ -90,7 +92,7 @@ def main():
         'rholnir':         (0.31, 0.51),
         #'taulnir':         (0.33, 0.53)
     }
-
+    np.random.seed(random_seed)
     # Loop through ensemble members and perturb the parameters
     for ens in range(num_ensemble):
         perturb_vegetation_parameters(ens, parameter_ranges)

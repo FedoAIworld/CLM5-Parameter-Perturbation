@@ -9,17 +9,17 @@ import matplotlib.pyplot as plt
 from perturb_helper_funcs import *
 
 
-years = list(range(2009, 2019))
-num_ensemble = 50
+#years = list(range(2014, 2019))
+num_ensemble = 150
 
 def perturb_soil_textures_and_parameters(iensemble=0):
     #Sand and clay content were perturbed with random noise drawn from spatially uniform distribution (±20 %). 
     #In order to avoid un-physical values of the soil parameters, the sum of the sand and clay content were 
     #constrained to have a value not larger than 100 %.
-    sname = ("/home/fernand/JURECA/CLM5_DATA/inputdata/lnd/clm2/surfdata_map/test_trial_22/SE-Svb/" +
+    sname = ("/home/fernand/JURECA/CLM5_DATA/inputdata/lnd/clm2/surfdata_map/trial_22/SE-Svb/" +
              "ensemble/" +"surfdata_SE-Svb_hist_78pfts_CMIP6_simyr2000_c240511_pft_modified.nc_" +  
              str(iensemble + 1).zfill(5) + ".nc")
-    sorig = ("/home/fernand/JURECA/CLM5_DATA/inputdata/lnd/clm2/surfdata_map/test_trial_22/SE-Svb/ensemble/" +"surfdata_SE-Svb_hist_78pfts_CMIP6_simyr2000_c240511_pft_modified.nc")
+    sorig = ("/home/fernand/JURECA/CLM5_DATA/inputdata/lnd/clm2/surfdata_map/trial_22/SE-Svb/ensemble/" +"surfdata_SE-Svb_hist_78pfts_CMIP6_simyr2000_c240511_pft_modified.nc")
     
     with nc.Dataset(sorig) as src, nc.Dataset(sname, "w") as dst:
         # Copy attributes
@@ -57,8 +57,8 @@ def perturb_soil_textures_and_parameters(iensemble=0):
                         if pct[1, l, la, lo] < 0.0:
                             pct[1, l, la, lo] = 0.0
         # Keep OM in range 
-                        if pct[2,l, la, lo] > 120.0: 
-                             pct[2,l, la, lo] = 120.0
+                        if pct[2,l, la, lo] > 130.0: 
+                             pct[2,l, la, lo] = 130.0
                         if pct[2,l, la, lo] < 0.0: 
                              pct[2,l, la, lo] = 0.0
 
@@ -66,10 +66,10 @@ def perturb_soil_textures_and_parameters(iensemble=0):
         for l in range(dim_lvl):
             for la in range(dim_lat):
                 for lo in range(dim_lon):
-                    old_sum = np.sum(pct[:, l, la, lo])
-                    for t in range(dim_types):
+                    old_sum = np.sum(pct[:2, l, la, lo])
+                    for t in range(dim_types-1):
                         if old_sum > 100.0:
-                            pct[:, l, la, lo] = 100.0 * pct[:, l, la, lo] / old_sum
+                            pct[t, l, la, lo] = 100.0 * pct[t, l, la, lo] / old_sum
         
         # After generating all random variables
         # save state of random number generator to file
@@ -123,8 +123,8 @@ def perturb_soil_textures_and_parameters(iensemble=0):
         sucsat                       = 10. * ( 10.**(1.88-0.0131*SAND))
         sucsat_std                   = 0.72 + 0.0012*CLAY
         noise_sucsat                 = np.random.normal(loc=0.0, scale=sucsat_std, size=pct_sand.shape)
-        perturbed_log_sucsat         = np.log(sucsat) + noise_sucsat
-        back_transformed_sucsat      = np.clip(np.exp(perturbed_log_sucsat), 0, 1000)
+        perturbed_log_sucsat         = np.log10(sucsat) + noise_sucsat
+        back_transformed_sucsat      = np.clip(np.power(10, perturbed_log_sucsat), 0, 1000)
         dst.variables["PSIS_SAT"][:] = back_transformed_sucsat
 
         # Porosity
@@ -163,8 +163,8 @@ def perturb_soil_textures_and_parameters(iensemble=0):
         xksat                    = 0.0070556 *( 10.**(-0.884+0.0153*SAND))
         xksat_std                = 0.459 + 0.00321*(1-(SAND+CLAY)/100)
         noise_xksat              = np.random.normal(loc=0.0, scale=xksat_std, size=pct_sand.shape)
-        perturbed_log_xksat      = np.log(xksat) + noise_xksat
-        back_transformed_xksat   = np.exp(perturbed_log_xksat)
+        perturbed_log_xksat      = np.log10(xksat) + noise_xksat
+        back_transformed_xksat   = np.power(10, perturbed_log_xksat)
         dst.variables["KSAT"][:] = back_transformed_xksat
         
         #, bsw.flatten(), perturbed_bsw.flatten(), xksat.flatten(), back_transformed_xksat.flatten(), perturbed_xksat.flatten(), watsat.flatten(), perturbed_watsat.flatten(), sucsat, back_transformed_sucsat.flatten(), perturbed_sucsat.flatten()
@@ -174,14 +174,13 @@ rnd_state_file = "rnd_state.json"
 force_seed = False 
 # Either seed random number generator or continue with existing state
 if not os.path.isfile(rnd_state_file) or force_seed:
-    np.random.seed(22)
+    np.random.seed(67890)
 else:
     rnd_state_deserialize()
 
 for ens in range(num_ensemble):
     perturb_soil_textures_and_parameters(ens)
-    for y in years:
-        print("Done with year " + str(y) + " ensemble " + str(ens))
+    print(f"Ensemble member {ens + 1} perturbed and saved to output file.")
 
 ## Create arrays to store data for all ensemble members
 #all_SAND, all_CLAY, unpert_sucsat, log_perturbed_sucsat, back_sucsat, unpert_watsat, all_perturbed_watsat, unpert_bsw, all_perturbed_bsw, unpert_xksat, log_perturbed_xksat, back_xksat = [], [], [], [] , [], [], [], [], [], [], [], []
