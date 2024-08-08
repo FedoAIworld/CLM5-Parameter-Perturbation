@@ -9,7 +9,7 @@ from perturb_helper_funcs import *
 
 
 def generate_vname(ensemble_number):
-    base_path = "/home/fernand/JURECA/CLM5_DATA/inputdata/lnd/clm2/paramdata/ensemble/trial_22/SE-Svb"
+    base_path = "/home/fernand/JURECA/CLM5_DATA/inputdata/lnd/clm2/paramdata/ensemble/trial_54321/DE-RuW"
     filename = f"clm5_params.c171117.nc_{str(ensemble_number + 1).zfill(5)}.nc"
     return os.path.join(base_path, filename)
 
@@ -20,7 +20,7 @@ def load_parameter_values(ensemble_number, parameter_name):
     return parameter_values.flatten()
 
 def perturb_vegetation_parameters(iensemble, parameter_ranges):
-    vorig = "/home/fernand/JURECA/CLM5_DATA/inputdata/lnd/clm2/paramdata/ensemble/trial_22/SE-Svb/clm5_params.c171117.nc"
+    vorig = "/home/fernand/JURECA/CLM5_DATA/inputdata/lnd/clm2/paramdata/ensemble/trial_54321/DE-RuW/clm5_params.c171117.nc"
     vname = generate_vname(iensemble)
 
     
@@ -74,13 +74,13 @@ def main():
         'theta_cj':        (0.8, 0.99),
         'tpu25ratio':      (0.0835, 0.501),
         'wc2wjb0':         (0.5, 1.5),
-        #'lmr_intercept_atkin': (1.76, 2.64),
+        #'lmr_intercept_atkin': (1.77, 2.64),
         'jmaxha':          (34000, 78000),
         'lmrha':           (23195, 69585),
         #'lmrhd':           (75325, 225975),
         'vcmaxha':         (45000, 173000),
         'tpuha':           (45000, 173000),
-        #'stem_leaf':       (1.84, 2.76),
+        #'stem_leaf':       (1.2, 1.8),
         #'froot_leaf':      (1.2, 1.8),
         'leaf_long':       (2.64, 3.96),
         #'FUN_fracfixers':  (0, 1),
@@ -88,15 +88,25 @@ def main():
         'kmax':            (3.00E-09, 3.80E-08),
         #'fff':             (0.02, 5),
         #'psi50':           (-351000, -189000),
-        #'rhosnir':         (0.4, 0.6),
+        #'rhosnir':         (0.424, 0.636),
         'rholnir':         (0.31, 0.51),
-        #'taulnir':         (0.33, 0.53)
+        #'taulnir':         (0.23, 0.53)
     }
-    np.random.seed(random_seed)
+    
+    rnd_state_file = "veg_rnd_state.json"
+    if not os.path.isfile(rnd_state_file):
+        np.random.seed(random_seed)
+    else:
+        rnd_state_deserialize('veg')
+    
     # Loop through ensemble members and perturb the parameters
     for ens in range(num_ensemble):
         perturb_vegetation_parameters(ens, parameter_ranges)
         print(f"Ensemble member {ens + 1} perturbed and saved to output file.")
+    
+    # After generating all random variables
+    # save state of random number generator to file
+    rnd_state_serialize('veg')
 
     ## Define the parameters for visualization
     #parameters_to_visualize = ['medlynintercept', 'medlynslope', 'jmaxb1', 'vcmaxha', 'theta_cj']
@@ -121,5 +131,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
-# /p/scratch/cjicg41/eloundou1/CLM5_DATA/inputdata/lnd/clm2/paramdata/test_trial_22/max/SE-Svb
